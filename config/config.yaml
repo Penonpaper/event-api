@@ -11,3 +11,7 @@ postgres:
 redis:
   host: "redis"
   port: 6379
+
+jwt:
+  secret: "super_secret_jwtkey"
+  ttl_minutes: 15

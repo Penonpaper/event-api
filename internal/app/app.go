@@ -6,10 +6,11 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/penonpaper/event-api/config"
 	"github.com/penonpaper/event-api/internal/handler/http"
-	"github.com/penonpaper/event-api/internal/repository"
+	repository "github.com/penonpaper/event-api/internal/repository/postgres"
 	"github.com/penonpaper/event-api/internal/service"
 )
 
@@ -24,9 +25,7 @@ func NewApp(cfg *config.Config) *App {
 
 // DSN PostgreSQL - postgres://user:password@host:port/dbname
 func (a *App) Run() error {
-	userRepo := repository.NewUserRepo(a.db)
-	userSer := service.NewUserUsercase(userRepo)
-	http := http.NewUserHandler(userSer)
+
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		a.cfg.Postgres.User,
 		a.cfg.Postgres.Password,
@@ -71,6 +70,22 @@ func (a *App) Run() error {
 		"host", a.cfg.Postgres.Host,
 		"port", a.cfg.Postgres.Port,
 	)
+
+	userRepos := repository.NewRepositories(a.db)
+	userSers := service.NewServices(*userRepos, a.cfg.JWT.Secret, a.cfg.JWT.TTLMinutes)
+	userHandlers := http.NewHandlers(*userSers)
+	router := gin.Default()
+
+	routes := http.NewRoutes(userHandlers.User, userHandlers.Event, a.cfg.JWT.Secret)
+	routes.RegisteredRoutes(router)
+	gin.SetMode(a.cfg.App.GinMode)
+
+	slog.Info("Успешный запуск HTTP сервера: " + a.cfg.App.Port + " " + a.cfg.App.AppEnv)
+
+	if err := router.Run(":" + a.cfg.App.Port); err != nil {
+		return fmt.Errorf("failed to start http server: %w", err)
+	}
+
 	return nil
 }
 

@@ -11,11 +11,17 @@ type Config struct {
 	App      AppConfig
 	Postgres PostgresConfig
 	Redis    RedisConfig
+	JWT      JWTConfig
 }
 
+type JWTConfig struct {
+	Secret     string `mapstructure:"secret"`
+	TTLMinutes int    `mapstructure:"ttl_minutes"`
+}
 type AppConfig struct {
-	Port string
-	Env  string
+	Port    string
+	AppEnv  string
+	GinMode string
 }
 
 type PostgresConfig struct {
@@ -42,6 +48,7 @@ func LoadConfig() (*Config, error) {
 
 	viper.BindEnv("postgres.password", "DB_PASSWORD")
 	viper.BindEnv("postgres.db_name", "DB_NAME")
+	viper.BindEnv("jwt.secret", "JWT_SECRET")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("Ошибка чтения файла конфигурации: %w", err)

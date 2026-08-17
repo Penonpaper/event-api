@@ -1,17 +1,27 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+)
 
 type User struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"-"`
-	Role         string `json:"role"`
-	Created_at   string `json:"created_at"`
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+	Role         string    `json:"role"`
+	Created_at   time.Time `json:"created_at"`
+}
+type TokenClaims struct {
+	jwt.RegisteredClaims
+	Role string `json:"role"`
 }
 
 type UserService interface {
 	SignUp(ctx context.Context, email, password string) error
+	SignIn(ctx context.Context, email, password string) (string, error)
 }
 
 type UserRepository interface {

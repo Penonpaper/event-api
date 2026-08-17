@@ -46,7 +46,7 @@ services:
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB_NAME}
+      - DB_NAME=${POSTGRES_DB}
       - REDIS_PORT=6379
       - GIN_MODE=${GIN_MODE}
       - PORT=${APP_PORT}
@@ -63,7 +63,7 @@ services:
     image: migrate/migrate:v4.19.1
     container_name: event_migrator
     volumes:
-      - ./migrations: /migrations
+      - "./migrations:/migrations"
     networks:
       - radar_network
     command: [

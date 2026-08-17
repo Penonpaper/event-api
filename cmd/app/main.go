@@ -17,7 +17,7 @@ func main() {
 	}
 
 	// Инициализация логгера
-	logger := setupLogger(config.App.Env)
+	logger := setupLogger(config.App.AppEnv)
 	slog.SetDefault(logger)
 
 	slog.Info(
