@@ -13,6 +13,7 @@ type User struct {
 	PasswordHash string    `json:"-"`
 	Role         string    `json:"role"`
 	Created_at   time.Time `json:"created_at"`
+	Nickname     string    `json:"nickname"`
 }
 type TokenClaims struct {
 	jwt.RegisteredClaims
@@ -20,7 +21,7 @@ type TokenClaims struct {
 }
 
 type UserService interface {
-	SignUp(ctx context.Context, email, password string) error
+	SignUp(ctx context.Context, email, password, role, nickname string) error
 	SignIn(ctx context.Context, email, password string) (string, error)
 }
 

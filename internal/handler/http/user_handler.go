@@ -19,6 +19,8 @@ func NewUserHandler(service domain.UserService) *UserHandler {
 type signUpInput struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
+	Role     string `json:"role" binding:"required"`
+	Nickname string `json:"nickname" binding:"required"`
 }
 
 type signInInput struct {
@@ -35,7 +37,7 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 		})
 		return
 	}
-	if err := h.userService.SignUp(c.Request.Context(), input.Email, input.Password); err != nil {
+	if err := h.userService.SignUp(c.Request.Context(), input.Email, input.Password, input.Role, input.Nickname); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Не удалось зарегистрировать пользователя" + err.Error(),
 		})

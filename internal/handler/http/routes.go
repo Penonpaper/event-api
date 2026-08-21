@@ -31,7 +31,10 @@ func (r *Routes) RegisteredRoutes(router *gin.Engine) {
 	protected := router.Group("/api/v1")
 	protected.Use(middleware.AuthMiddleware(r.Jwtsecret))
 	{
-		protected.POST("/events", r.EventHandler.CreateEvent)
+		protected.POST("/events", middleware.OrganizerMiddleware("admin", "manager"),
+			r.EventHandler.CreateEvent)
+		protected.DELETE("/event/:id", middleware.OrganizerMiddleware("admin", "manager"),
+			r.EventHandler.DeleteEvent)
 	}
 
 }

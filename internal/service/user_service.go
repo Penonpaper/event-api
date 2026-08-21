@@ -26,7 +26,7 @@ func NewUserUsercase(repo domain.UserRepository, jwtsecret string, jwtttlminutes
 	}
 }
 
-func (a *UserUsecase) SignUp(ctx context.Context, email, password string) error {
+func (a *UserUsecase) SignUp(ctx context.Context, email, password, role, nickname string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
@@ -36,8 +36,9 @@ func (a *UserUsecase) SignUp(ctx context.Context, email, password string) error 
 		ID:           uuid.New().String(),
 		Email:        email,
 		PasswordHash: string(hashedPassword),
-		Role:         "client",
+		Role:         role,
 		Created_at:   time.Now(),
+		Nickname:     nickname,
 	}
 
 	if err := a.userRepo.Create(ctx, &user); err != nil {

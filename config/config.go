@@ -47,7 +47,7 @@ func LoadConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
 	viper.BindEnv("postgres.password", "DB_PASSWORD")
-	viper.BindEnv("postgres.db_name", "DB_NAME")
+	//viper.BindEnv("postgres.db_name", "DB_NAME")
 	viper.BindEnv("jwt.secret", "JWT_SECRET")
 
 	if err := viper.ReadInConfig(); err != nil {
