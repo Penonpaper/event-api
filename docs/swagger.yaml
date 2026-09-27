@@ -1,0 +1,444 @@
+basePath: /
+definitions:
+  domain.EventListItem:
+    properties:
+      description:
+        example: Ежегодная встреча Go-разработчиков
+        type: string
+      ends_at:
+        example: "2026-09-10T18:00:00Z"
+        type: string
+      id:
+        example: a4f21d3e-90ab-4cde-8f12-34567890abcdef
+        type: string
+      location:
+        example: Москва, Технопарк
+        type: string
+      organizer_id:
+        example: d3b07384-d113-4956-a5db-e13c14c48cf2
+        type: string
+      organizer_name:
+        example: Иван Иванов
+        type: string
+      start_at:
+        example: "2026-09-10T10:00:00Z"
+        type: string
+      title:
+        example: Конференция по Go
+        type: string
+    type: object
+  http.EventInput:
+    properties:
+      description:
+        example: Практическое занятие по проектированию чистого кода.
+        maxLength: 1000
+        type: string
+      ends_at:
+        example: "2026-10-15T18:00:00Z"
+        type: string
+      location:
+        example: Казань, ул. Пушкина, д. 5
+        type: string
+      starts_at:
+        example: "2026-10-15T14:00:00Z"
+        type: string
+      status:
+        enum:
+        - planned
+        - active
+        - cancelled
+        example: planned
+        type: string
+      title:
+        example: Воркшоп по архитектуре Go
+        maxLength: 100
+        minLength: 3
+        type: string
+      total_seats:
+        example: 45
+        type: integer
+    required:
+    - description
+    - ends_at
+    - location
+    - starts_at
+    - status
+    - title
+    - total_seats
+    type: object
+  http.RefreshTokenInput:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  http.SignInInput:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  http.SignUpInput:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      nickname:
+        example: john_doe
+        maxLength: 20
+        minLength: 3
+        type: string
+      password:
+        example: secret123
+        maxLength: 32
+        minLength: 6
+        type: string
+      role:
+        description: Ограничиваем список ролей через oneof, чтобы пользователь не
+          мог зарегистрироваться как admin
+        enum:
+        - client
+        - manager
+        example: client
+        type: string
+    required:
+    - email
+    - nickname
+    - password
+    - role
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Серверный API для управления мероприятиями, пользователями и авторизацией.
+  title: Event Management API
+  version: "1.0"
+paths:
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Оставляет токен клиента, но удаляет полностью refresh token
+      parameters:
+      - description: Токен  деавторизации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.RefreshTokenInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная деавторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удаление токена из Redis
+      tags:
+      - Logout
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет токен пару клиента
+      parameters:
+      - description: Токен  обновления
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.RefreshTokenInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное обновление токена
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновление токен пары
+      tags:
+      - Refresh
+  /api/v1/auth/signin:
+    post:
+      consumes:
+      - application/json
+      description: В авторизации происходит генерация двух токенов refresh и access
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.SignInInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Не удалось авторизовать пользователя
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Авторизация в приложение
+      tags:
+      - Signin
+  /api/v1/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Стандартная регистрация пользователя в бд
+      parameters:
+      - description: Поле регистрации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.SignUpInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Возрващаем токены
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Такой эмаил уже есть
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера"ы
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - SignUp
+  /api/v1/event:
+    post:
+      consumes:
+      - application/json
+      description: Cоздание мероприятия админом или организатором
+      parameters:
+      - description: Описание мепроприятия
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.EventInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное создание ивента
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создание ивента определенной ролью
+      tags:
+      - Event
+  /api/v1/event/:id:
+    delete:
+      description: Удаление определнного мероприятия
+      responses:
+        "200":
+          description: Успешное удаление event
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удаление ивента
+      tags:
+      - Event
+  /api/v1/event/:id/register:
+    post:
+      consumes:
+      - application/json
+      description: Регистрация на мероприятие
+      parameters:
+      - description: UUID мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная регистрация на мероприятие
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Регистрация на мероприятие
+      tags:
+      - Register_attendee
+  /api/v1/event/:id/unregister:
+    post:
+      consumes:
+      - application/json
+      description: Отмена регистрации на мероприятие
+      parameters:
+      - description: UUID мероприятия
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Отмена участия в мероприятии
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Ошибка формата данных
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отмена регистрации на мероприятие
+      tags:
+      - UnRegister_attendee
+  /api/v1/events:
+    get:
+      consumes:
+      - application/json
+      description: Получение всех мероприятий
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список мероприятий успешно получен
+          schema:
+            items:
+              $ref: '#/definitions/domain.EventListItem'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение всех ивентов
+      tags:
+      - Event
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите токен в формате: Bearer <ваш_jwt_токен>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -27,7 +27,7 @@ func (Ev *EventRepo) CreateEvent(ctx context.Context, Event *domain.Event) error
 	`
 
 	_, err := Ev.db.Exec(ctx, query, Event.ID, Event.OrganizerID, Event.Title, Event.Description,
-		Event.Location, Event.StartAt, Event.EndsAt, Event.Status, Event.Total_seats)
+		Event.Location, Event.StartAt, Event.EndsAt, Event.Status, Event.TotalSeats)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create event (repo): %w", err)

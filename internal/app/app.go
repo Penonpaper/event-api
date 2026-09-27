@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/penonpaper/event-api/config"
 	"github.com/penonpaper/event-api/internal/handler/http"
@@ -37,7 +38,7 @@ func (a *App) Run() error {
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		slog.Error("Критическая ошибка создания пула PostgreSQL", "error", err)
-		return fmt.Errorf("failde to create pgxpool: %w", err)
+		return fmt.Errorf("failed to create pgxpool: %w", err)
 	}
 	a.db = pool
 
@@ -70,13 +71,43 @@ func (a *App) Run() error {
 		"host", a.cfg.Postgres.Host,
 		"port", a.cfg.Postgres.Port,
 	)
+	rdb := redis.NewClient(&redis.Options{
+		Addr: a.cfg.Redis.Host + ":" + a.cfg.Redis.Port,
+	})
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		slog.Error("Не удалось подключиться к серверу Redis", "error", err)
+
+		a.db.Close()
+
+		return fmt.Errorf("Failed to connect to redis: %w", err)
+	}
+	defer rdb.Close()
+
+	slog.Info(
+		"Успешное подключение к Redis",
+		"host", a.cfg.Redis.Host,
+		"port", a.cfg.Redis.Port)
 
 	userRepos := repository.NewRepositories(a.db)
-	userSers := service.NewServices(*userRepos, a.cfg.JWT.Secret, a.cfg.JWT.TTLMinutes)
+
+	userSers := service.NewServices(
+		*userRepos,
+		a.cfg.JWT.AccessTokenSecret,
+		a.cfg.JWT.RefreshTokenSecret,
+		a.cfg.JWT.AccessTokenTTL,
+		a.cfg.JWT.RefreshTokenTTL,
+		rdb)
+
 	userHandlers := http.NewHandlers(*userSers)
+
 	router := gin.Default()
 
-	routes := http.NewRoutes(userHandlers.User, userHandlers.Event, a.cfg.JWT.Secret)
+	routes := http.NewRoutes(userHandlers.User,
+		userHandlers.Event,
+		userHandlers.Attendee,
+		userHandlers.Auth,
+		a.cfg.JWT.AccessTokenSecret)
+
 	routes.RegisteredRoutes(router)
 	gin.SetMode(a.cfg.App.GinMode)
 

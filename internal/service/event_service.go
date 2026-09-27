@@ -23,11 +23,11 @@ func (Ev *EventUseCase) Create(ctx context.Context, userID string, title, descti
 	total_seats int, startAt, endsAt time.Time, status string) error {
 
 	if total_seats <= 0 {
-		return fmt.Errorf("Seats must be positive")
+		return fmt.Errorf("%w: Seats must be positive", domain.ErrConditions)
 	}
 
 	if title == " " {
-		return fmt.Errorf("Title cant be empty")
+		return fmt.Errorf("%w: Title cant be empty", domain.ErrConditions)
 	}
 
 	Event := &domain.Event{
@@ -36,7 +36,7 @@ func (Ev *EventUseCase) Create(ctx context.Context, userID string, title, descti
 		Title:       title,
 		Description: desctiption,
 		Location:    location,
-		Total_seats: total_seats,
+		TotalSeats:  total_seats,
 		StartAt:     startAt,
 		EndsAt:      endsAt,
 		Status:      status,
@@ -44,7 +44,7 @@ func (Ev *EventUseCase) Create(ctx context.Context, userID string, title, descti
 	}
 
 	if err := Ev.EventRepo.CreateEvent(ctx, Event); err != nil {
-		return fmt.Errorf("Failed to create event (service): %w", err)
+		return fmt.Errorf("%w: Failed to create event (repo): %v", domain.ErrDataBase, err)
 	}
 
 	return nil
@@ -55,7 +55,7 @@ func (Ev *EventUseCase) GetEvents(ctx context.Context) ([]domain.EventListItem, 
 	var events []domain.EventListItem
 	events, err := Ev.EventRepo.GetAllEvents(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get events(service): %w", err)
+		return nil, fmt.Errorf("%w: Failed to get events(repo): %v", domain.ErrDataBase, err)
 	}
 
 	return events, nil
@@ -66,12 +66,12 @@ func (Ev *EventUseCase) Delete(ctx context.Context, id, organizer_id uuid.UUID, 
 	if role == "manager" {
 		err := Ev.EventRepo.DeleteEvent(ctx, id, organizer_id)
 		if err != nil {
-			return fmt.Errorf("Failed to delete from events (service): %w", err)
+			return fmt.Errorf("%w: Failed to delete from events (repo): %v", domain.ErrDataBase, err)
 		}
 	} else {
 		err := Ev.EventRepo.DeleteEventMN(ctx, id)
 		if err != nil {
-			return fmt.Errorf("Failed to delete from events (service): %w", err)
+			return fmt.Errorf("%w: Failed to delete from events (repo): %v", domain.ErrDataBase, err)
 		}
 	}
 

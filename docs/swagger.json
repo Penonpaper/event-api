@@ -1,0 +1,665 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Серверный API для управления мероприятиями, пользователями и авторизацией.",
+        "title": "Event Management API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/v1/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Оставляет токен клиента, но удаляет полностью refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logout"
+                ],
+                "summary": "Удаление токена из Redis",
+                "parameters": [
+                    {
+                        "description": "Токен  деавторизации",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RefreshTokenInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешная деавторизация",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет токен пару клиента",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refresh"
+                ],
+                "summary": "Обновление токен пары",
+                "parameters": [
+                    {
+                        "description": "Токен  обновления",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RefreshTokenInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление токена",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/signin": {
+            "post": {
+                "description": "В авторизации происходит генерация двух токенов refresh и access",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Signin"
+                ],
+                "summary": "Авторизация в приложение",
+                "parameters": [
+                    {
+                        "description": "Данные для входа",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SignInInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешная авторизация",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не удалось авторизовать пользователя",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/signup": {
+            "post": {
+                "description": "Стандартная регистрация пользователя в бд",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SignUp"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Поле регистрации",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SignUpInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Возрващаем токены",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Такой эмаил уже есть",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера\"ы",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/event": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cоздание мероприятия админом или организатором",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Event"
+                ],
+                "summary": "Создание ивента определенной ролью",
+                "parameters": [
+                    {
+                        "description": "Описание мепроприятия",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.EventInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное создание ивента",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/event/:id": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаление определнного мероприятия",
+                "tags": [
+                    "Event"
+                ],
+                "summary": "Удаление ивента",
+                "responses": {
+                    "200": {
+                        "description": "Успешное удаление event",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/event/:id/register": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Регистрация на мероприятие",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Register_attendee"
+                ],
+                "summary": "Регистрация на мероприятие",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID мероприятия",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешная регистрация на мероприятие",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/event/:id/unregister": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Отмена регистрации на мероприятие",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "UnRegister_attendee"
+                ],
+                "summary": "Отмена регистрации на мероприятие",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID мероприятия",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Отмена участия в мероприятии",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка формата данных",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/events": {
+            "get": {
+                "description": "Получение всех мероприятий",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Event"
+                ],
+                "summary": "Получение всех ивентов",
+                "responses": {
+                    "200": {
+                        "description": "Список мероприятий успешно получен",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.EventListItem"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "domain.EventListItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Ежегодная встреча Go-разработчиков"
+                },
+                "ends_at": {
+                    "type": "string",
+                    "example": "2026-09-10T18:00:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "a4f21d3e-90ab-4cde-8f12-34567890abcdef"
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Москва, Технопарк"
+                },
+                "organizer_id": {
+                    "type": "string",
+                    "example": "d3b07384-d113-4956-a5db-e13c14c48cf2"
+                },
+                "organizer_name": {
+                    "type": "string",
+                    "example": "Иван Иванов"
+                },
+                "start_at": {
+                    "type": "string",
+                    "example": "2026-09-10T10:00:00Z"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Конференция по Go"
+                }
+            }
+        },
+        "http.EventInput": {
+            "type": "object",
+            "required": [
+                "description",
+                "ends_at",
+                "location",
+                "starts_at",
+                "status",
+                "title",
+                "total_seats"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Практическое занятие по проектированию чистого кода."
+                },
+                "ends_at": {
+                    "type": "string",
+                    "example": "2026-10-15T18:00:00Z"
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Казань, ул. Пушкина, д. 5"
+                },
+                "starts_at": {
+                    "type": "string",
+                    "example": "2026-10-15T14:00:00Z"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "planned",
+                        "active",
+                        "cancelled"
+                    ],
+                    "example": "planned"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Воркшоп по архитектуре Go"
+                },
+                "total_seats": {
+                    "type": "integer",
+                    "example": 45
+                }
+            }
+        },
+        "http.RefreshTokenInput": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.SignInInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.SignUpInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "nickname",
+                "password",
+                "role"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "nickname": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 3,
+                    "example": "john_doe"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 6,
+                    "example": "secret123"
+                },
+                "role": {
+                    "description": "Ограничиваем список ролей через oneof, чтобы пользователь не мог зарегистрироваться как admin",
+                    "type": "string",
+                    "enum": [
+                        "client",
+                        "manager"
+                    ],
+                    "example": "client"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Введите токен в формате: Bearer \u003cваш_jwt_токен\u003e",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

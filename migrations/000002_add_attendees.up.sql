@@ -6,4 +6,3 @@ CREATE TABLE event_attendees (
 
     PRIMARY KEY (event_id, user_id)
 );
-

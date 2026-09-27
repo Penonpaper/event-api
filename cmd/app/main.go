@@ -6,9 +6,20 @@ import (
 	"os"
 
 	"github.com/penonpaper/event-api/config"
+	_ "github.com/penonpaper/event-api/docs"
 	"github.com/penonpaper/event-api/internal/app"
 )
 
+// @title           Event Management API
+// @version         1.0
+// @description     Серверный API для управления мероприятиями, пользователями и авторизацией.
+// @host            localhost:8080
+// @BasePath        /
+
+// @securityDefinitions.apikey BearerAuth
+// @in                         header
+// @name                       Authorization
+// @description                Введите токен в формате: Bearer <ваш_jwt_токен>
 func main() {
 	// Загрузка конфигурации
 	config, err := config.LoadConfig()

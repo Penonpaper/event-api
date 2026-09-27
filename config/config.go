@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -15,8 +16,10 @@ type Config struct {
 }
 
 type JWTConfig struct {
-	Secret     string `mapstructure:"secret"`
-	TTLMinutes int    `mapstructure:"ttl_minutes"`
+	AccessTokenSecret  string        `mapstructure:"access_token_secret"`
+	RefreshTokenSecret string        `mapstructure:"refresh_token_secret"`
+	AccessTokenTTL     time.Duration `mapstructure:"access_token_ttl"`
+	RefreshTokenTTL    time.Duration `mapstructure:"refresh_token_ttl"`
 }
 type AppConfig struct {
 	Port    string
@@ -47,8 +50,11 @@ func LoadConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
 	viper.BindEnv("postgres.password", "DB_PASSWORD")
+	viper.BindEnv("jwt.access_token_secret", "ACCESS_TOKEN_SECRET")
+	viper.BindEnv("jwt.refresh_token_secret", "REFRESH_TOKEN_SECRET")
+
 	//viper.BindEnv("postgres.db_name", "DB_NAME")
-	viper.BindEnv("jwt.secret", "JWT_SECRET")
+	//viper.BindEnv("jwt.secret", "JWT_SECRET")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("Ошибка чтения файла конфигурации: %w", err)

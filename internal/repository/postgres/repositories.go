@@ -6,13 +6,15 @@ import (
 )
 
 type Repositories struct {
-	User  domain.UserRepository
-	Event domain.EventRepository
+	User     domain.UserRepository
+	Event    domain.EventRepository
+	Attendee domain.EventAttendeesRepository
 }
 
 func NewRepositories(db *pgxpool.Pool) *Repositories {
 	return &Repositories{
-		User:  NewUserRepo(db),
-		Event: NewEventRepo(db),
+		User:     NewUserRepo(db),
+		Event:    NewEventRepo(db),
+		Attendee: NewAttendeeRepo(db),
 	}
 }
