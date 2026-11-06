@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/penonpaper/event-api/config"
-	"github.com/penonpaper/event-api/internal/handler/http"
+	custom_http "github.com/penonpaper/event-api/internal/handler/http"
+	"github.com/penonpaper/event-api/internal/metrics"
 	repository "github.com/penonpaper/event-api/internal/repository/postgres"
 	"github.com/penonpaper/event-api/internal/service"
 )
@@ -98,26 +100,53 @@ func (a *App) Run() error {
 		a.cfg.JWT.RefreshTokenTTL,
 		rdb)
 
-	userHandlers := http.NewHandlers(*userSers)
+	userHandlers := custom_http.NewHandlers(*userSers)
 
+	apiMetrics := metrics.NewMetrics()
 	router := gin.Default()
 
-	routes := http.NewRoutes(userHandlers.User,
+	routes := custom_http.NewRoutes(
+		userHandlers.User,
 		userHandlers.Event,
 		userHandlers.Attendee,
 		userHandlers.Auth,
+		apiMetrics,
 		a.cfg.JWT.AccessTokenSecret)
 
 	routes.RegisteredRoutes(router)
 	gin.SetMode(a.cfg.App.GinMode)
 
-	slog.Info("Успешный запуск HTTP сервера: " + a.cfg.App.Port + " " + a.cfg.App.AppEnv)
+	serverErrors := make(chan error, 2)
 
-	if err := router.Run(":" + a.cfg.App.Port); err != nil {
-		return fmt.Errorf("failed to start http server: %w", err)
+	slog.Info("Успешный запуск HTTP сервера: " + a.cfg.App.Port + " " + a.cfg.App.AppEnv)
+	go func() {
+		if err := router.Run(":" + a.cfg.App.Port); err != nil {
+			serverErrors <- fmt.Errorf("failed to start API server on %s: %w", a.cfg.App.Port, err)
+			//return fmt.Errorf("failed to start http server: %w", err)
+		}
+	}()
+
+	slog.Info("Запуск приватного сервера метри Prometheus на порту: " + a.cfg.App.MetricPort)
+
+	go func() {
+
+		http.Handle("/metrics", apiMetrics.MetricsHandler())
+
+		if err := http.ListenAndServe(":"+a.cfg.App.MetricPort, nil); err != nil {
+			serverErrors <- fmt.Errorf("failed to start metrics server: %w", err)
+		}
+	}()
+
+	select {
+
+	case err = <-serverErrors:
+		return err
+	// Если за секунду никто не упал
+	case <-time.After(1 * time.Second):
+		slog.Info("Успешный запуск всех серверов!")
 	}
 
-	return nil
+	select {}
 }
 
 func (a *App) Close() {

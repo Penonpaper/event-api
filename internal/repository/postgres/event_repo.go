@@ -22,12 +22,12 @@ func NewEventRepo(db *pgxpool.Pool) domain.EventRepository {
 
 func (Ev *EventRepo) CreateEvent(ctx context.Context, Event *domain.Event) error {
 	query := `INSERT INTO events(id, organizer_id, title, description, location, start_at, 
-								ends_at, status, total_seats)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)		
+								ends_at, status, total_seats, tags)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)		
 	`
 
 	_, err := Ev.db.Exec(ctx, query, Event.ID, Event.OrganizerID, Event.Title, Event.Description,
-		Event.Location, Event.StartAt, Event.EndsAt, Event.Status, Event.TotalSeats)
+		Event.Location, Event.StartAt, Event.EndsAt, Event.Status, Event.TotalSeats, Event.Tags)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create event (repo): %w", err)
@@ -43,8 +43,8 @@ func (Ev *EventRepo) GetAllEvents(ctx context.Context) ([]domain.EventListItem, 
 	e.location,
 	e.start_at,
 	e.ends_at,
-	e.organizer_id,
-	u.nickname
+	u.nickname,
+	e.tags
 	FROM events e
 	JOIN users u
 	ON u.id = e.organizer_id`
@@ -67,8 +67,8 @@ func (Ev *EventRepo) GetAllEvents(ctx context.Context) ([]domain.EventListItem, 
 			&event.Location,
 			&event.StartAt,
 			&event.EndsAt,
-			&event.OrganizerID,
 			&event.OrganizerName,
+			&event.Tags,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row (get all event): %w", err)
@@ -105,4 +105,57 @@ func (Ev *EventRepo) DeleteEventMN(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("Failed to delete from events: %w", err)
 	}
 	return nil
+}
+
+func (Ev *EventRepo) GetByTags(ctx context.Context, f domain.Filter) ([]domain.EventListItem, error) {
+	query := `SELECT e.id,
+	e.title,
+	e.description,
+	e.location,
+	e.start_at,
+	e.ends_at,
+	u.nickname,
+	e.tags
+	FROM events e
+	JOIN users u
+	ON u.id = e.organizer_id
+	WHERE e.tags @> $1
+	ORDER BY e.start_at ASC
+	`
+	rows, err := Ev.db.Query(ctx, query, []string{f.Tag})
+	fmt.Printf("Запуск репо , err = %s, rows = %s", err, rows)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get events: %w", err)
+	}
+
+	defer rows.Close()
+
+	var events []domain.EventListItem
+
+	for rows.Next() {
+		var event domain.EventListItem
+		err := rows.Scan(
+			&event.ID,
+			&event.Title,
+			&event.Description,
+			&event.Location,
+			&event.StartAt,
+			&event.EndsAt,
+			&event.OrganizerName,
+			&event.Tags,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row (get all event): %w", err)
+		}
+
+		events = append(events, event)
+	}
+	fmt.Printf("\n\n\n\n\nЗапуск репо , err = %s,\n\n\n\n\n\n events = %s", err, events)
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during rows iteration: %w", err)
+	}
+
+	return events, nil
+
 }

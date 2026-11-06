@@ -41,6 +41,7 @@ func (Ev *EventUseCase) Create(ctx context.Context, userID string, title, descti
 		EndsAt:      endsAt,
 		Status:      status,
 		CreatedAt:   time.Now(),
+		Tags:        domain.ExtractTags(title + " " + desctiption),
 	}
 
 	if err := Ev.EventRepo.CreateEvent(ctx, Event); err != nil {
@@ -76,4 +77,11 @@ func (Ev *EventUseCase) Delete(ctx context.Context, id, organizer_id uuid.UUID, 
 	}
 
 	return nil
+}
+func (Ev *EventUseCase) FilterByTags(ctx context.Context, f domain.Filter) ([]domain.EventListItem, error) {
+	if f.Tag == "" {
+		// Выводим без фильтра
+		return Ev.EventRepo.GetAllEvents(ctx)
+	}
+	return Ev.EventRepo.GetByTags(ctx, f)
 }

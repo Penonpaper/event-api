@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	uuid "github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/penonpaper/event-api/internal/domain"
 )
@@ -26,7 +28,17 @@ func (a *UserRepo) Create(ctx context.Context, user *domain.User) error {
 
 	_, err := a.db.Exec(ctx, query, user.ID, user.Email, user.PasswordHash, user.Role, user.Created_at, user.Nickname)
 	if err != nil {
-		return fmt.Errorf("Failed to create user: %w", err)
+
+		var pgErr *pgconn.PgError
+
+		// Код нарушения уникальности
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if pgErr.ConstraintName == "users_email_key" {
+				return fmt.Errorf("%w: %v", domain.ErrDuplicateEmail, err)
+			}
+		}
+
+		return fmt.Errorf("%w: Failed to create user: %v", domain.ErrDataBase, err)
 	}
 	return nil
 }

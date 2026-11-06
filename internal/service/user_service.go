@@ -29,6 +29,10 @@ func (a *UserUsecase) SignUp(ctx context.Context, email, password, role, nicknam
 		//return fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	if role != "client" && role != "admin" && role != "manager" {
+		return fmt.Errorf("%w: role is not correct", domain.ErrConditions)
+	}
+
 	user := domain.User{
 		ID:           uuid.New().String(),
 		Email:        email,
@@ -37,7 +41,6 @@ func (a *UserUsecase) SignUp(ctx context.Context, email, password, role, nicknam
 		Created_at:   time.Now(),
 		Nickname:     nickname,
 	}
-
 	if err := a.userRepo.Create(ctx, &user); err != nil {
 
 		switch {

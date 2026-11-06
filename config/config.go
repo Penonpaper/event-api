@@ -22,9 +22,10 @@ type JWTConfig struct {
 	RefreshTokenTTL    time.Duration `mapstructure:"refresh_token_ttl"`
 }
 type AppConfig struct {
-	Port    string
-	AppEnv  string
-	GinMode string
+	Port       string
+	AppEnv     string
+	GinMode    string
+	MetricPort string `mapstructure:"metrics_port"`
 }
 
 type PostgresConfig struct {

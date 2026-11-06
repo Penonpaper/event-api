@@ -23,6 +23,7 @@ type EventInput struct {
 	EndsAt      time.Time `json:"ends_at" example:"2026-10-15T18:00:00Z" binding:"required"`
 	TotalSeats  int       `json:"total_seats" example:"45" binding:"required"`
 	Status      string    `json:"status" example:"planned" binding:"required,oneof=planned active cancelled"`
+	Tags        []string  `json:"tags" example:"go,golang,горутины"`
 }
 
 func NewEventHandler(service domain.EventService) *EventHandler {
@@ -205,4 +206,34 @@ func (h *EventHandler) DeleteEvent(c *gin.Context) {
 		"message": "Успешное удаление ивента",
 	})
 
+}
+
+// @Summary Получение всех ивентов по тегу
+// @Description В url запроса вводится tag и ищется согласно данному тегу мероприятия
+// @Tags Event
+// @Accept json
+// @Produce json
+// @Param tag query string true "Тег для фильтрации"
+// @Success 200 {array} domain.EventListItem "Список мероприятий успешно получен"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/events/tag [get]
+func (h *EventHandler) FilterByTags(c *gin.Context) {
+	tag := c.Query("tag")
+	if tag == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "tag is empty",
+		})
+		return
+	}
+
+	events, err := h.EventService.FilterByTags(c.Request.Context(), domain.Filter{Tag: tag})
+	if err != nil {
+		slog.Error("service error", "err", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Не удалось получить ивенты",
+		})
+		return
+	}
+	slog.Info("service returned", "tag", tag, "count", len(events), "is_nil", events == nil)
+	c.JSON(http.StatusOK, events)
 }

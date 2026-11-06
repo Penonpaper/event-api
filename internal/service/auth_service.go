@@ -101,7 +101,6 @@ func (a *AuthUseCase) SignIn(ctx context.Context, email string, password string)
 
 		//return nil, fmt.Errorf("Failed to get data from db: %w", err)
 	}
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 
 	if err != nil {

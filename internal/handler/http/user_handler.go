@@ -71,6 +71,10 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 				"error": "Внутренняя ошибка сервера",
 			})
 			return
+		case errors.Is(err, domain.ErrConditions):
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Ошибка Некорректные данные пользователя",
+			})
 		default:
 			// Неожиданная ошибка
 			slog.Error("Unexpected error during signup",

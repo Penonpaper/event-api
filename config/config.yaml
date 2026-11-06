@@ -1,6 +1,7 @@
 app:
   port: "8080"
   env: "development"
+  metrics_port: "8081"
 
 postgres:
   host: "postgres_container"

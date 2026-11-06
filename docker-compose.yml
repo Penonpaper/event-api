@@ -9,12 +9,34 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "${POSTGRES_PORT}:5432"
+    command:
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - radar_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  postgres_test:
+    image: postgres:15-alpine
+    container_name: postgres_container_test
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: event_api_test
+    ports:
+      - "5434:5432"
+    
+    networks:
+      - radar_network
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d event_api_test"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -41,6 +63,7 @@ services:
     restart: on-failure
     ports:
       - "${APP_PORT}:${APP_PORT}"
+      # Один порт не слушаем
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -59,6 +82,38 @@ services:
         condition: service_healthy
     networks:
       - radar_network
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      - radar_network
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - radar_network
+    volumes:
+      - grafana_data:/var/lib/grafana
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter
+    ports:
+      - "9187:9187"
+    networks:
+      - radar_network
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres_exporter:strong_password_here@postgres:5432/event_radar?sslmode=disable"
+    depends_on:
+      - postgres
+    
   migrator:
     image: migrate/migrate:v4.19.1
     container_name: event_migrator
@@ -74,10 +129,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+  migrator_test:
+    image: migrate/migrate:v4.19.1
+    volumes:
+      - "./migrations:/migrations"
+    networks:
+      - radar_network
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "postgres://test_user:test_password@postgres_test:5432/event_api_test?sslmode=disable"
+      - "up"
+    depends_on:
+      postgres_test:
+        condition: service_healthy
 volumes:
   postgres_data:
   redis_data:
-
+  postgres_test_data:
+  grafana_data:
 networks:
   radar_network:
     driver: bridge
